@@ -1,26 +1,42 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-
+import TempDisplay from './TempDisplay';
 
 
 
 const WeatherBox = () => {
 
     const [weather, setWeather ] = useState({})
+    const [temp, setTemp] = useState(0)
+    const [isCelsius, setIsCelsius] = useState(true)
 
-    useEffect(() =>{
-        
+    useEffect(() =>{        
         const success = pos => {
             const crd = pos.coords
-            
             axios.get(`https://api.openweathermap.org/data/2.5/weather?lat=${crd.latitude}&lon=${crd.longitude}&appid=664adefe760417ec3dbdaadc80f173b2`)
-                .then(res => setWeather(res.data))
+            .then(res =>{
+                setWeather(res.data)
+                setTemp(((res.data.main.temp)-273.15).toFixed(2)) // this allows to display temperature converted as C° on page load 
+            })                
         }
-    
-        navigator.geolocation.getCurrentPosition(success);
+        const error = () => {alert("Please allow browser to access location then reload the page")} //browser location in disabled 
 
+        navigator.geolocation.getCurrentPosition(success,error);
     },[] )
 
+    
+    const convertTemp = () => {
+        if(isCelsius){
+            //set tempreature display to farenheit 
+            setTemp(((weather.main.temp - 273.15) * 9 / 5 + 32 ).toFixed(2))
+            setIsCelsius(false)
+            
+        } else {
+            //set temperature display to celsius
+            setTemp((weather.main.temp - 273.15).toFixed(2))
+            setIsCelsius(true)
+        }
+    }
     console.log(weather)
 
     return (
@@ -28,15 +44,21 @@ const WeatherBox = () => {
         <div className='container'>
             <h1>Weather App</h1>
             <h3>{weather.name}, {weather.sys?.country}</h3>
+            <p>{weather.weather?.[0].description}</p>
             <div className="details">
-                <p>{weather.weather?.[0].description}</p>
-                <ul style={{display:"inline"}}> {/*this might be bads*/}
-                    <li><i className="fa-solid fa-fan"></i> Wind speed: {weather.wind?.speed}</li>
-                    <li><i className="fa-solid fa-cloud"></i> Clouds: {weather.clouds?.all}%</li>
-                    <li><i class="fa-solid fa-temperature-half"></i> Pressure: {weather.main?.pressure}</li>
+                <img src={`http://openweathermap.org/img/wn/${weather.weather?.[0].icon}@2x.png`} alt="" />
+                <ul> 
+                    <li><i className="fa-solid fa-fan"></i>&nbsp;&nbsp;Wind speed: {weather.wind?.speed}</li>
+                    <li><i className="fa-solid fa-cloud"></i>&nbsp;Clouds: {weather.clouds?.all}%</li>
+                    <li><i className="fa-solid fa-temperature-half"></i>&nbsp;&nbsp;&nbsp;  Pressure: {weather.main?.pressure}</li>
                 </ul>
             </div>
-            <h2>Temp here lol</h2>
+            
+            
+            <TempDisplay>
+                <h2 className='temp'>{temp} { isCelsius ? "C°": "F°" }</h2>
+                <button onClick={convertTemp}>C° / F°</button>
+            </TempDisplay>
         </div>
     );
 };
